@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.env
+*.md
+docs
+examples
+tests
+src-legacy
+scratch
+coverage
+.vscode
+.cursor
+*.log
+yarn-error.log
+.DS_Store

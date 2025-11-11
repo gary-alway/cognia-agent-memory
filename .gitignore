@@ -1,0 +1,26 @@
+# TypeScript/Node
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+package-lock.json
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+
+# Testing
+
+# OS
+.DS_Store
+Thumbs.db
+
+scratch/

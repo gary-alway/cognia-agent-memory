@@ -1,0 +1,51 @@
+{
+  "name": "cognia-agent-memory",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Graph RAG-based agent memory system using Neo4j, vector embeddings",
+  "scripts": {
+    "build": "tsc",
+    "pretest": "yarn install --check-files || yarn install --force || true",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest --run --coverage",
+    "pretest:e2e": "rm -rf dist && yarn build",
+    "test:e2e": "vitest --run --config vitest.e2e.config.ts",
+    "test:benchmark": "vitest --run --config vitest.e2e.config.ts test/mcp-server.benchmark.test.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "bootstrap": "tsc && node dist/src/scripts/bootstrap.js",
+    "verify-schema": "tsc && node dist/scripts/verify-schema.js",
+    "mcp-server": "tsc && node dist/src/server/mcp-server.js"
+  },
+  "keywords": [
+    "graph-rag",
+    "neo4j",
+    "vector-embeddings",
+    "llm",
+    "agent-memory"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "dotenv": "^16.3.1",
+    "minio": "^8.0.6",
+    "neo4j-driver": "^6.0.1",
+    "zod": "^4.1.12"
+  }
+}
