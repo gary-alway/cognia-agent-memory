@@ -48,9 +48,23 @@ async function searchArchivedSession(
     }
 
     try {
-      const messageEmbedding = await embeddingsClient.generateEmbedding(
-        message.text,
-      );
+      // Use stored embedding if available, otherwise generate on-the-fly
+      let messageEmbedding: number[];
+      if (
+        message.embedding &&
+        message.embedding.length === EMBEDDING_DIMENSION
+      ) {
+        messageEmbedding = message.embedding;
+      } else {
+        // Fallback for old archived sessions without embeddings
+        logger.debug(
+          `Generating embedding on-the-fly for message ${message.id} (no stored embedding)`,
+        );
+        messageEmbedding = await embeddingsClient.generateEmbedding(
+          message.text,
+        );
+      }
+
       const score = cosineSimilarity(queryEmbedding, messageEmbedding);
       const recencyScore = calculateRecencyScore(message.ts || "");
       const importance = DEFAULT_IMPORTANCE.MESSAGE;
@@ -70,7 +84,7 @@ async function searchArchivedSession(
       });
     } catch (error) {
       logger.warn(
-        `Failed to generate embedding for archived message ${message.id}:`,
+        `Failed to process embedding for archived message ${message.id}:`,
         error instanceof Error ? error.message : String(error),
       );
       continue;

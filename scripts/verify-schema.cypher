@@ -1,5 +1,6 @@
 // Verify schema was initialized correctly
 // Run this in Neo4j Browser (http://localhost:7474)
+// Default credentials: neo4j / password
 
 // Check constraints
 SHOW CONSTRAINTS;
@@ -8,9 +9,8 @@ SHOW CONSTRAINTS;
 SHOW INDEXES;
 
 // Check vector indexes specifically
-CALL db.indexes() YIELD name, type, state, properties
-WHERE type = 'VECTOR'
-RETURN name, type, state, properties;
+SHOW INDEXES
+WHERE type = 'VECTOR';
 
 // Verify specific constraints exist
 SHOW CONSTRAINTS

@@ -1,12 +1,5 @@
 # Roadmap
 
-## Performance Optimizations
-
-- [ ] **Embedding Storage in Archived Data**: Store embeddings in archived JSON to avoid on-the-fly generation (currently adds ~1000ms latency when `include_archived=true`)
-  - Store embeddings alongside messages in archived session JSON
-  - Update `archived_retrieval.ts` to use stored embeddings instead of generating on-the-fly
-  - Update archival process to include embeddings when archiving sessions
-
 ## Incomplete Features
 
 - [ ] **Delete Archived Sessions from Neo4j**: Currently archival stores to MinIO but doesn't delete from Neo4j
@@ -14,3 +7,18 @@
   - Make it configurable (default: keep in Neo4j for safety)
   - Add verification that archival succeeded before deletion
 
+## Test Infrastructure
+
+- [ ] **Test Database Isolation**: E2E tests currently pollute dev database
+  - Create separate Neo4j database for tests (requires Enterprise - already available)
+  - Update `vitest.e2e.config.ts` to use test database
+  - Add database switching in test setup/teardown
+  - Document test database setup in README
+  - **Short-term**: Cleanup hooks implemented to delete test data after each run
+
+- [ ] **Manual Test Script**: Create comprehensive manual test script to prove all Cognia features work
+  - Test all MCP tools (store_memory, recall_memories, track_tool_usage, preferences, session_info)
+  - Test memory ingestion and retrieval
+  - Test entity extraction and fact storage
+  - Test archival and restoration
+  - Test semantic search with embeddings

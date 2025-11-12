@@ -1,6 +1,6 @@
 {
   "name": "cognia-agent-memory",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Graph RAG-based agent memory system using Neo4j, vector embeddings",
   "scripts": {
@@ -17,6 +17,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "bootstrap": "tsc && node dist/src/scripts/bootstrap.js",
     "verify-schema": "tsc && node dist/scripts/verify-schema.js",
+    "cleanup-db": "tsc && node dist/scripts/cleanup-db.js",
+    "clean-s3": "tsc && node dist/scripts/clean-s3.js",
     "mcp-server": "tsc && node dist/src/server/mcp-server.js"
   },
   "keywords": [

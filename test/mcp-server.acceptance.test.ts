@@ -3,6 +3,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { cleanupTestData } from "./helpers/cleanup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,6 +55,7 @@ describe("MCP Server Acceptance Tests", () => {
     if (mcpClient) {
       await mcpClient.transport.close();
     }
+    await cleanupTestData();
   });
 
   describe("list_tools", () => {
