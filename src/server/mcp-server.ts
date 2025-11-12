@@ -111,7 +111,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             include_archived: {
               type: "boolean",
               description:
-                "Include archived memory in search (default: true, disable for faster queries on recent data only)",
+                "Include archived memory in search (default: true, adds ~1s latency; set false for ~90ms queries on recent data only)",
               default: true,
             },
             user_id: {

@@ -33,7 +33,7 @@ Complete reference for all configuration options in Cognia.
 | `MINIO_BUCKET`        | `agent-memory`   | MinIO bucket name for archived sessions                     |
 | `MINIO_SECURE`        | `false`          | Use HTTPS for MinIO connections (set to `"true"` to enable) |
 
-**Note:** `recall_memories` searches both active Neo4j data and archived MinIO sessions by default, merging and reranking results together. Set `include_archived=false` to search only recent data for faster queries.
+**Note:** `recall_memories` searches both active Neo4j data and archived MinIO sessions by default (~1s latency due to MinIO I/O overhead), merging and reranking results together. Set `include_archived=false` to search only recent data for ~90ms response times.
 
 ### Memory Management
 

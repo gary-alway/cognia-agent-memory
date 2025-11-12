@@ -24,10 +24,12 @@ Results are measured in milliseconds (ms). Each benchmark runs multiple iteratio
 
 | Tool                         | Iterations | Min (ms) | Max (ms) | Mean (ms) | Median (ms) | P95 (ms) | P99 (ms) |
 | ---------------------------- | ---------- | -------- | -------- | --------- | ----------- | -------- | -------- |
-| get_session_info             | 20         | 0.15     | 2.77     | 0.58      | 0.34        | 2.77     | 2.77     |
-| set_preference               | 20         | 1.49     | 5.83     | 2.11      | 1.86        | 5.83     | 5.83     |
-| get_preferences              | 20         | 0.93     | 1.85     | 1.18      | 1.16        | 1.85     | 1.85     |
-| store_memory (simple)        | 10         | 101.78   | 131.23   | 117.20    | 114.96      | 131.23   | 131.23   |
-| store_memory (with entities) | 10         | 74.66    | 160.89   | 126.25    | 136.93      | 160.89   | 160.89   |
-| recall_memories              | 10         | 77.55    | 117.92   | 89.81     | 84.69       | 117.92   | 117.92   |
-| track_tool_usage             | 20         | 90.63    | 104.68   | 95.77     | 95.94       | 104.68   | 104.68   |
+| get_session_info             | 20         | 0.14     | 2.46     | 0.68      | 0.38        | 2.46     | 2.46     |
+| set_preference               | 20         | 1.32     | 20.48    | 2.89      | 1.78        | 20.48    | 20.48    |
+| get_preferences              | 20         | 0.99     | 6.70     | 1.64      | 1.31        | 6.70     | 6.70     |
+| store_memory (simple)        | 10         | 94.76    | 141.18   | 118.44    | 118.47      | 141.18   | 141.18   |
+| store_memory (with entities) | 10         | 87.08    | 148.53   | 121.62    | 120.13      | 148.53   | 148.53   |
+| recall_memories              | 10         | 749.95   | 1470.04  | 1027.63   | 1070.88     | 1470.04  | 1470.04  |
+| track_tool_usage             | 20         | 83.85    | 98.08    | 91.36     | 92.43       | 98.08    | 98.08    |
+
+**Note:** `recall_memories` searches archived sessions by default (`include_archived=true`), adding ~1s latency due to MinIO I/O overhead (listing and fetching session files). Pre-stored embeddings eliminate embedding generation latency. Set `include_archived=false` to query only recent data for ~90ms response times.
