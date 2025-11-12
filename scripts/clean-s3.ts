@@ -8,7 +8,6 @@ import {
 } from "../src/core/config.js";
 
 function parseEndpoint(endpoint: string): { host: string; port: number } {
-  // Simple parse for host:port format
   if (!endpoint.includes("://")) {
     const parts = endpoint.split(":");
     const host = parts[0];
@@ -16,7 +15,6 @@ function parseEndpoint(endpoint: string): { host: string; port: number } {
     return { host, port };
   }
 
-  // Parse as URL if it has protocol
   const url = new URL(endpoint);
   const host = url.hostname;
   const port = url.port ? parseInt(url.port, 10) : 9000;
@@ -62,9 +60,7 @@ async function cleanS3() {
   try {
     const exists = await client.bucketExists(MINIO_BUCKET);
     if (!exists) {
-      console.log(
-        `✅ Bucket ${MINIO_BUCKET} doesn't exist. Nothing to clean.`
-      );
+      console.log(`✅ Bucket ${MINIO_BUCKET} doesn't exist. Nothing to clean.`);
       return;
     }
 

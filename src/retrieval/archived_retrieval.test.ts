@@ -233,7 +233,6 @@ describe("archived_retrieval", () => {
       expect(results.length).toBe(2);
       // Results should be sorted by score (descending)
       expect(results[0].score).toBeGreaterThanOrEqual(results[1].score);
-      // Both messages should be present
       const texts = results.map((r) => r.text);
       expect(texts).toContain("High score message");
       expect(texts).toContain("Low score message");
