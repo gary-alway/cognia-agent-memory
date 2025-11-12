@@ -1,28 +1,27 @@
+import { randomUUID } from "crypto";
 import { Client } from "minio";
 import type {
   ManagedTransaction,
   Record as Neo4jRecord,
   Session,
 } from "neo4j-driver";
-import { getLogger } from "../core/logger.js";
-import { getRecordsAsync } from "../core/neo4j-helpers.js";
 import { getEmbeddingsClient } from "../clients/embeddings.js";
-import { EMBEDDING_DIMENSION } from "../core/config.js";
-import { DEFAULT_IMPORTANCE } from "../core/constants.js";
-import { extractAndStoreEntities } from "../memory/entities.js";
-import { extractAndStoreFacts } from "../memory/facts.js";
-import { createEntityId } from "../memory/entities.js";
-import { randomUUID } from "crypto";
-
-const logger = getLogger("archival");
 import {
   ARCHIVE_AGE_DAYS,
+  EMBEDDING_DIMENSION,
   MINIO_ACCESS_KEY,
   MINIO_BUCKET,
   MINIO_ENDPOINT,
   MINIO_SECRET_KEY,
   MINIO_SECURE,
 } from "../core/config.js";
+import { DEFAULT_IMPORTANCE } from "../core/constants.js";
+import { getLogger } from "../core/logger.js";
+import { getRecordsAsync } from "../core/neo4j-helpers.js";
+import { createEntityId, extractAndStoreEntities } from "../memory/entities.js";
+import { extractAndStoreFacts } from "../memory/facts.js";
+
+const logger = getLogger("archival");
 
 export interface SessionData {
   id: string;
@@ -31,6 +30,7 @@ export interface SessionData {
     role: string;
     text: string;
     ts: string;
+    embedding?: number[];
   }>;
   entities: Array<{
     type: string;
@@ -280,7 +280,8 @@ export async function getOldSessions(
                id: m2.id,
                role: m2.role,
                text: m2.text,
-               ts: m2.ts
+               ts: m2.ts,
+               embedding: m2.embedding
            }) AS messages,
            collect(distinct {
                type: e.type,
@@ -306,6 +307,7 @@ export async function getOldSessions(
       role: string;
       text: string;
       ts: string;
+      embedding?: number[];
     }>;
     const entities = record.get("entities") as Array<{
       type: string;
@@ -368,15 +370,24 @@ export async function restoreSessionToNeo4j(
     return timeA - timeB;
   });
 
+  // Use stored embeddings if available, otherwise generate on-the-fly
   const messageEmbeddings = await Promise.all(
-    sortedMessages.map((msg) =>
-      embeddingsClient.generateEmbedding(msg.text).catch((error) => {
+    sortedMessages.map(async (msg) => {
+      if (msg.embedding && msg.embedding.length === EMBEDDING_DIMENSION) {
+        return msg.embedding;
+      }
+
+      // Fallback: generate embedding for old archives without stored embeddings
+      logger.debug(
+        `Generating embedding for message ${msg.id} during restore (no stored embedding)`,
+      );
+      return embeddingsClient.generateEmbedding(msg.text).catch((error) => {
         logger.error(
           `Failed to generate embedding for message ${msg.id}: ${error}`,
         );
         return new Array(EMBEDDING_DIMENSION).fill(0);
-      }),
-    ),
+      });
+    }),
   );
 
   await session.executeWrite(async (tx) => {

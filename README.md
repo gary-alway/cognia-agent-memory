@@ -87,6 +87,7 @@ docker compose up -d
 ```
 
 This starts:
+
 - Neo4j (port 7474 for browser, 7687 for Bolt)
 - MinIO (port 9000 for API, 9001 for console)
 - Schema bootstrap container (runs automatically)
@@ -129,6 +130,7 @@ docker exec -it cognia-minio mc mb local/agent-memory
 The MCP server exposes Cognia's memory system as tools for AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
 
 **Build and run:**
+
 ```bash
 make mcp-server
 # or
@@ -139,12 +141,14 @@ yarn mcp-server
 The MCP server is pre-configured in `.cursor/mcp.json`. **Important:** You must build the project first (`yarn build`) before Cursor can use the MCP server. After building, restart Cursor or reload the window to connect to the MCP server.
 
 **Configure in Claude Desktop:**
+
 1. Build the project: `yarn build`
 2. Open or create the Claude Desktop config file:
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
    - **Linux**: `~/.config/Claude/claude_desktop_config.json`
 3. Add the Cognia MCP server configuration:
+
 ```json
 {
   "mcpServers": {
@@ -169,6 +173,7 @@ The MCP server is pre-configured in `.cursor/mcp.json`. **Important:** You must 
   }
 }
 ```
+
 4. Replace `/absolute/path/to/cognia` with the actual absolute path to your Cognia project directory (e.g., `/Users/username/dev/cognia` on macOS)
 5. Update all environment variables in the `env` section to match your `.env` file values
 6. Restart Claude Desktop to connect to the MCP server
@@ -176,81 +181,30 @@ The MCP server is pre-configured in `.cursor/mcp.json`. **Important:** You must 
 **Note:** If you already have other MCP servers configured, merge the `cognia` entry into your existing `mcpServers` object rather than replacing it.
 
 **Available MCP Tools:**
-- `store_memory` - Store messages with automatic entity and fact extraction. **CRITICAL**: Always store the ACTUAL content (code, technical details, conversations, etc.), not descriptions or summaries of it.
-- `recall_memories` - Semantic search for past conversations (optionally includes archived data via `include_archived` parameter)
+
+- `store_memory` - Store messages with entity and fact extraction
+- `recall_memories` - Semantic search (includes archived data by default ~1s latency, set `include_archived=false` for ~90ms)
 - `track_tool_usage` - Track tool calls for pattern learning
-- `set_preference` - Set user preferences for personalized retrieval
-- `get_preferences` - Retrieve all user preferences
+- `set_preference` / `get_preferences` - User preference management
 - `get_session_info` - Get current session and user IDs
-- `list_archived_sessions` - List archived sessions from MinIO with metadata (session IDs, timestamps, message counts). Limit parameter (1-1000) controls how many sessions are returned
-- `replay_session` - Retrieve and replay an archived session, optionally restore it back to Neo4j for search. **Note**: Tool calls are not restored as tool-to-message relationships aren't preserved in archived data
-
-**Example usage:**
-Once configured, you can use these tools in your AI conversations. For example:
-
-**Basic Memory Operations:**
-- "Store this conversation in memory" (stores the actual conversation content)
-- "Recall what we discussed about X"
-- "Set my preference for no code comments"
-- "Get my preferences"
-
-**Archived Sessions:**
-- "List my archived sessions" - Shows all archived sessions with metadata
-- "Show me the last 10 archived sessions" - Limits results to 10 most recent
-- "Replay session sessions/abc123/2024-01-01T00:00:00.000Z.json" - View an archived session
-- "Restore session sessions/abc123/2024-01-01T00:00:00.000Z.json to Neo4j" - Restore for search
-
-**Example workflow:**
-1. List archived sessions to find what you're looking for:
-   ```
-   "List archived sessions from last month, limit to 20"
-   ```
-   Returns: Session IDs, timestamps, message counts, and object names
-
-2. Replay a specific session to review it:
-   ```
-   "Replay session sessions/my-session-id/2024-01-15T10:30:00.000Z.json"
-   ```
-   Returns: All messages in chronological order with timestamps
-
-3. Restore a session to make it searchable again:
-   ```
-   "Restore session sessions/my-session-id/2024-01-15T10:30:00.000Z.json to Neo4j"
-   ```
-   Restores messages and entities back to Neo4j for semantic search
-
-**Important Note on Memory Storage:**
-When using `store_memory`, always store the **actual content** you want to remember, not meta-descriptions. For example:
-- ✅ **Correct**: Store the actual code snippet, technical explanation, or conversation content
-- ❌ **Wrong**: Store "I wrote a function that does X" or "User asked me to implement Y"
-
-The system stores exactly what you provide - if you store a description instead of content, that's what will be remembered (and it won't be useful for recall).
-
-**Debugging MCP Server:**
-If the MCP server is not responding or you need to kill stuck processes:
-
-```bash
-# Find all node processes (including MCP server)
-ps aux | grep -i node | grep -v grep
-```
+- `list_archived_sessions` - List archived sessions with metadata (limit 1-1000)
+- `replay_session` - Retrieve/replay archived session, optionally restore to Neo4j
 
 ## Development
 
-### Make Commands
-
 ```bash
-make install
-make test
-make lint
-make type-check
-make format
-make check
-make setup
+make help          # Show all available commands
 ```
+
+### Debug Helpers
+
+- **Verify schema**: `yarn verify-schema` or `scripts/verify-schema.cypher`
+- **Explore database**: `scripts/debug-queries.cypher` in Neo4j Browser
 
 ## Features
 
 ### Core Memory Operations
+
 - **Session-based message storage** with vector embeddings
 - **Semantic similarity search** using Neo4j vector indexes
 - **Entity extraction** from messages using LLM
@@ -258,6 +212,7 @@ make setup
 - **User preferences** for personalized retrieval
 
 ### Advanced Retrieval
+
 - **Hybrid search** combining vector similarity and graph patterns
 - **Pattern expansion** with 1-2 hop graph traversal
 - **Re-ranking** with weighted scoring:
@@ -268,78 +223,24 @@ make setup
 - **Multi-hop entity relationships**
 
 ### Tool Intelligence
+
 - **Tool call tracking** with success/failure status
 - **Pattern learning** from past tool executions
 - **Failure recovery patterns** - learn what fixes worked
 - **Latency monitoring** for performance optimization
 
 ### Long-term Storage
+
 - **Automatic archival** to MinIO (S3-compatible) - Old sessions (>90 days) are archived to MinIO
 - **Configurable retention** (default: 90 days) - Sessions older than this are archived
 - **Integrated memory retrieval** - Archived sessions are searched alongside active data when recalling memories
 - **Semantic search** - Archived messages are retrieved using vector similarity search
 - **Tool trace logging** for audits - Tool traces can be archived separately
 
-**Note:** Archived data is now integrated into memory recall. When `recall_memories` is called, the system searches both active Neo4j data and archived MinIO sessions, merging and reranking results together.
-
-### Archived Session Management
-
-**Listing Archived Sessions:**
-```bash
-# In your AI conversation:
-"List my archived sessions"
-# or
-"Show me archived sessions, limit to 10"
-```
-
-**Response format:**
-```json
-{
-  "sessions": [
-    {
-      "objectName": "sessions/session-123/2024-01-15T10:30:00.000Z.json",
-      "sessionId": "session-123",
-      "timestamp": "2024-01-15T10:30:00.000Z",
-      "archivedAt": "2024-01-15T10:30:00.000Z",
-      "messageCount": 15
-    }
-  ],
-  "total": 42,
-  "returned": 10
-}
-```
-
-**Replaying Archived Sessions:**
-```bash
-# View an archived session:
-"Replay session sessions/session-123/2024-01-15T10:30:00.000Z.json"
-```
-
-**Response includes:**
-- All messages in chronological order
-- Session metadata (ID, entities, tools)
-- Message count
-
-**Restoring Sessions to Neo4j:**
-```bash
-# Restore for search (makes it searchable again):
-"Restore session sessions/session-123/2024-01-15T10:30:00.000Z.json to Neo4j"
-# or use the restore_to_neo4j parameter
-```
-
-**What gets restored:**
-- ✅ Messages with original timestamps
-- ✅ Entities and facts (regenerated)
-- ✅ Embeddings (regenerated in parallel)
-- ❌ Tool calls (relationships not preserved in archived format)
-
-**Use cases:**
-- **Audit/Review**: Replay sessions to review past conversations
-- **Data Recovery**: Restore important sessions back to Neo4j for search
-- **Debugging**: List sessions to find specific conversations
-- **Compliance**: Access archived data for compliance or analysis
+**Note:** `recall_memories` searches both active Neo4j data and archived MinIO sessions by default, adding ~1s latency for comprehensive memory. Set `include_archived=false` to search only recent data for ~90ms response times.
 
 ### RAG Integration
+
 - **Context-aware responses** using retrieved memories
 - **Document synthesis** from facts and messages
 - **LLM integration** via Ollama

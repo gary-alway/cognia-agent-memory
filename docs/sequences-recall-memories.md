@@ -42,9 +42,13 @@ sequenceDiagram
     MinIO-->>ArchivedRetrieval: session objects[]
     loop For each archived session
         ArchivedRetrieval->>MinIO: retrieveSession(objectName)
-        MinIO-->>ArchivedRetrieval: sessionData
-        ArchivedRetrieval->>EmbeddingsClient: generateEmbedding(message.text)
-        EmbeddingsClient-->>ArchivedRetrieval: embedding
+        MinIO-->>ArchivedRetrieval: sessionData (with pre-stored embeddings)
+        alt Embedding stored
+            ArchivedRetrieval->>ArchivedRetrieval: Use stored embedding
+        else No embedding or wrong dimension
+            ArchivedRetrieval->>EmbeddingsClient: generateEmbedding(message.text)
+            EmbeddingsClient-->>ArchivedRetrieval: embedding
+        end
         ArchivedRetrieval->>ArchivedRetrieval: Calculate similarity score
     end
     ArchivedRetrieval-->>AdvancedRetrieval: archivedMessages[]

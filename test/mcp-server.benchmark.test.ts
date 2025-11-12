@@ -3,6 +3,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, it } from "vitest";
+import { cleanupTestData } from "./helpers/cleanup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -98,6 +99,7 @@ describe("MCP Server Performance Benchmarks", () => {
     if (mcpClient) {
       await mcpClient.transport.close();
     }
+    await cleanupTestData();
 
     console.log("\n=== MCP Server Performance Benchmark Results ===\n");
     console.log(

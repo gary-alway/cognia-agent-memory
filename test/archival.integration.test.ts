@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { ArchivalService, archiveOldSessions, getArchivalService } from "../src/archival/archival.js";
-import { getConnection } from "../src/core/db.js";
 import type { Session } from "neo4j-driver";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  ArchivalService,
+  archiveOldSessions,
+  getArchivalService,
+} from "../src/archival/archival.js";
+import { getConnection } from "../src/core/db.js";
+import { cleanupTestData } from "./helpers/cleanup.js";
 
 describe("Archival Integration Tests", () => {
   let archivalService: ArchivalService;
@@ -15,6 +20,7 @@ describe("Archival Integration Tests", () => {
   });
 
   afterAll(async () => {
+    await cleanupTestData();
     await session.close();
   });
 
@@ -36,9 +42,7 @@ describe("Archival Integration Tests", () => {
             ts: new Date().toISOString(),
           },
         ],
-        entities: [
-          { type: "PERSON", name: "Test User" },
-        ],
+        entities: [{ type: "PERSON", name: "Test User" }],
         tools: [],
       };
 
@@ -72,7 +76,9 @@ describe("Archival Integration Tests", () => {
       expect(retrieved).toBeDefined();
       expect(retrieved.id).toBe(sessionData.id);
       expect(retrieved.messages).toHaveLength(1);
-      expect(retrieved.messages[0].text).toBe("This message should be retrievable");
+      expect(retrieved.messages[0].text).toBe(
+        "This message should be retrievable"
+      );
     });
 
     it("should list archived sessions", async () => {
@@ -144,13 +150,17 @@ describe("Archival Integration Tests", () => {
           {
             sessionId: testSessionId,
             messageId: `msg-${Date.now()}`,
-          },
+          }
         );
       });
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const archivedCount = await archiveOldSessions(session, archivalService, 90);
+      const archivedCount = await archiveOldSessions(
+        session,
+        archivalService,
+        90
+      );
 
       expect(archivedCount).toBeGreaterThanOrEqual(0);
 
@@ -160,7 +170,7 @@ describe("Archival Integration Tests", () => {
           MATCH (s:Session {id: $sessionId})
           DETACH DELETE s
           `,
-          { sessionId: testSessionId },
+          { sessionId: testSessionId }
         );
       });
     });
@@ -184,22 +194,31 @@ describe("Archival Integration Tests", () => {
           {
             sessionId: testSessionId,
             messageId: `msg-${Date.now()}`,
-          },
+          }
         );
       });
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const archivedCount = await archiveOldSessions(session, archivalService, 90);
+      const archivedCount = await archiveOldSessions(
+        session,
+        archivalService,
+        90
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const finalSessions = await archivalService.listArchivedSessions("sessions/");
-      
-      const testSessionArchived = finalSessions.some((s) => s.includes(testSessionId));
+      const finalSessions =
+        await archivalService.listArchivedSessions("sessions/");
+
+      const testSessionArchived = finalSessions.some((s) =>
+        s.includes(testSessionId)
+      );
       expect(testSessionArchived).toBe(false);
-      
-      const sessionsForThisTest = finalSessions.filter((s) => s.includes("recent-session-"));
+
+      const sessionsForThisTest = finalSessions.filter((s) =>
+        s.includes("recent-session-")
+      );
       expect(sessionsForThisTest.length).toBe(0);
 
       await session.executeWrite((tx) => {
@@ -208,10 +227,9 @@ describe("Archival Integration Tests", () => {
           MATCH (s:Session {id: $sessionId})
           DETACH DELETE s
           `,
-          { sessionId: testSessionId },
+          { sessionId: testSessionId }
         );
       });
     });
   });
 });
-

@@ -111,8 +111,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             include_archived: {
               type: "boolean",
               description:
-                "Include archived memory in search (default: false, adds ~1000ms latency)",
-              default: false,
+                "Include archived memory in search (default: true, adds ~1s latency; set false for ~90ms queries on recent data only)",
+              default: true,
             },
             user_id: {
               type: "string",
@@ -333,7 +333,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (name === "recall_memories") {
         const query = args.query as string;
         const topK = (args.top_k as number) || 5;
-        const includeArchived = (args.include_archived as boolean) || false;
+        const includeArchived = (args.include_archived as boolean) ?? true;
 
         try {
           const queryEmbedding =

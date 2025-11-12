@@ -21,9 +21,13 @@ vi.mock("minio", () => {
   };
 });
 
+const mockGenerateEmbedding = vi
+  .fn()
+  .mockResolvedValue(new Array(1024).fill(0.1));
+
 vi.mock("../clients/embeddings.js", () => ({
   getEmbeddingsClient: vi.fn(() => ({
-    generateEmbedding: vi.fn().mockResolvedValue(new Array(1024).fill(0.1)),
+    generateEmbedding: mockGenerateEmbedding,
   })),
 }));
 
@@ -120,6 +124,68 @@ describe("archival", () => {
       expect(mockMinioClient.putObject).toHaveBeenCalled();
     });
 
+    it("should archive session with embeddings", async () => {
+      const service = new ArchivalService();
+      const mockEmbedding = new Array(1024).fill(0.1);
+      const sessionData = {
+        id: "session-1",
+        messages: [
+          {
+            id: "msg-1",
+            role: "user",
+            text: "Hello",
+            ts: "2024-01-01",
+            embedding: mockEmbedding,
+          },
+        ],
+        entities: [],
+        tools: [],
+      };
+
+      await service.archiveSession(sessionData);
+
+      expect(mockMinioClient.putObject).toHaveBeenCalled();
+      const putCall = mockMinioClient.putObject.mock.calls[0];
+      const storedBuffer = putCall[2] as Buffer;
+      const storedData = JSON.parse(storedBuffer.toString("utf-8"));
+      expect(storedData.messages[0].embedding).toEqual(mockEmbedding);
+      expect(storedData.messages[0].embedding).toHaveLength(1024);
+    });
+
+    it("should archive session with mixed embeddings", async () => {
+      const service = new ArchivalService();
+      const mockEmbedding = new Array(1024).fill(0.1);
+      const sessionData = {
+        id: "session-1",
+        messages: [
+          {
+            id: "msg-1",
+            role: "user",
+            text: "Hello",
+            ts: "2024-01-01",
+            embedding: mockEmbedding,
+          },
+          {
+            id: "msg-2",
+            role: "assistant",
+            text: "Hi",
+            ts: "2024-01-01",
+          },
+        ],
+        entities: [],
+        tools: [],
+      };
+
+      await service.archiveSession(sessionData);
+
+      expect(mockMinioClient.putObject).toHaveBeenCalled();
+      const putCall = mockMinioClient.putObject.mock.calls[0];
+      const storedBuffer = putCall[2] as Buffer;
+      const storedData = JSON.parse(storedBuffer.toString("utf-8"));
+      expect(storedData.messages[0].embedding).toEqual(mockEmbedding);
+      expect(storedData.messages[1].embedding).toBeUndefined();
+    });
+
     it("should retrieve a session", async () => {
       const service = new ArchivalService();
       const sessionData = {
@@ -130,7 +196,7 @@ describe("archival", () => {
       };
 
       const mockStream = {
-        on: vi.fn((event: string, callback: () => void) => {
+        on: vi.fn((event: string, callback: (data?: Buffer) => void) => {
           if (event === "data") {
             callback(Buffer.from(JSON.stringify(sessionData)));
           } else if (event === "end") {
@@ -217,7 +283,7 @@ describe("archival", () => {
       };
 
       const mockGetObjectStream1 = {
-        on: vi.fn((event: string, callback: () => void) => {
+        on: vi.fn((event: string, callback: (data?: Buffer) => void) => {
           if (event === "data") {
             callback(Buffer.from(JSON.stringify(sessionData1)));
           } else if (event === "end") {
@@ -228,7 +294,7 @@ describe("archival", () => {
       };
 
       const mockGetObjectStream2 = {
-        on: vi.fn((event: string, callback: () => void) => {
+        on: vi.fn((event: string, callback: (data?: Buffer) => void) => {
           if (event === "data") {
             callback(Buffer.from(JSON.stringify(sessionData2)));
           } else if (event === "end") {
@@ -337,6 +403,125 @@ describe("archival", () => {
       expect(result[0].messages).toHaveLength(1);
       expect(result[0].entities).toHaveLength(1);
       expect(result[0].tools).toHaveLength(1);
+    });
+
+    it("should include embeddings when fetching old sessions", async () => {
+      const mockEmbedding = new Array(1024).fill(0.1);
+      const mockRecords = [
+        {
+          get: vi.fn((key: string) => {
+            const values: Record<string, unknown> = {
+              session_id: "session-1",
+              messages: [
+                {
+                  id: "msg-1",
+                  role: "user",
+                  text: "Hello",
+                  ts: "2024-01-01",
+                  embedding: mockEmbedding,
+                },
+              ],
+              entities: [],
+              tools: [],
+            };
+            return values[key];
+          }),
+        },
+      ];
+
+      (mockTx.run as ReturnType<typeof vi.fn>).mockReturnValue({
+        records: mockRecords,
+      });
+
+      const result = await getOldSessions(mockTx, 90);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].messages[0].embedding).toEqual(mockEmbedding);
+      expect(result[0].messages[0].embedding).toHaveLength(1024);
+    });
+
+    it("should handle messages without embeddings", async () => {
+      const mockRecords = [
+        {
+          get: vi.fn((key: string) => {
+            const values: Record<string, unknown> = {
+              session_id: "session-1",
+              messages: [
+                {
+                  id: "msg-1",
+                  role: "user",
+                  text: "Hello",
+                  ts: "2024-01-01",
+                  embedding: undefined,
+                },
+                {
+                  id: "msg-2",
+                  role: "assistant",
+                  text: "Hi",
+                  ts: "2024-01-01",
+                },
+              ],
+              entities: [],
+              tools: [],
+            };
+            return values[key];
+          }),
+        },
+      ];
+
+      (mockTx.run as ReturnType<typeof vi.fn>).mockReturnValue({
+        records: mockRecords,
+      });
+
+      const result = await getOldSessions(mockTx, 90);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].messages).toHaveLength(2);
+      expect(result[0].messages[0].embedding).toBeUndefined();
+      expect(result[0].messages[1].embedding).toBeUndefined();
+    });
+
+    it("should handle mixed messages with and without embeddings", async () => {
+      const mockEmbedding = new Array(1024).fill(0.1);
+      const mockRecords = [
+        {
+          get: vi.fn((key: string) => {
+            const values: Record<string, unknown> = {
+              session_id: "session-1",
+              messages: [
+                {
+                  id: "msg-1",
+                  role: "user",
+                  text: "Hello",
+                  ts: "2024-01-01",
+                  embedding: mockEmbedding,
+                },
+                {
+                  id: "msg-2",
+                  role: "assistant",
+                  text: "Hi",
+                  ts: "2024-01-01",
+                  embedding: undefined,
+                },
+              ],
+              entities: [],
+              tools: [],
+            };
+            return values[key];
+          }),
+        },
+      ];
+
+      (mockTx.run as ReturnType<typeof vi.fn>).mockReturnValue({
+        records: mockRecords,
+      });
+
+      const result = await getOldSessions(mockTx, 90);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].messages).toHaveLength(2);
+      expect(result[0].messages[0].embedding).toEqual(mockEmbedding);
+      expect(result[0].messages[1].embedding).toBeUndefined();
     });
   });
 
@@ -498,6 +683,119 @@ describe("archival", () => {
       await restoreSessionToNeo4j(mockSession, sessionData);
 
       expect(mockSession.executeWrite).toHaveBeenCalledTimes(1);
+    });
+
+    it("should use stored embeddings when available", async () => {
+      const storedEmbedding1 = new Array(1024).fill(0.5);
+      const storedEmbedding2 = new Array(1024).fill(0.7);
+
+      const sessionData = {
+        id: "session-1",
+        messages: [
+          {
+            id: "msg-1",
+            role: "user",
+            text: "Hello",
+            ts: "2024-01-01T00:00:00.000Z",
+            embedding: storedEmbedding1,
+          },
+          {
+            id: "msg-2",
+            role: "assistant",
+            text: "Hi there!",
+            ts: "2024-01-01T00:01:00.000Z",
+            embedding: storedEmbedding2,
+          },
+        ],
+        entities: [],
+        tools: [],
+      };
+
+      const result = await restoreSessionToNeo4j(mockSession, sessionData);
+
+      expect(result.messageCount).toBe(2);
+      expect(mockGenerateEmbedding).not.toHaveBeenCalled();
+    });
+
+    it("should generate embeddings on-the-fly for messages without stored embeddings", async () => {
+      const sessionData = {
+        id: "session-1",
+        messages: [
+          {
+            id: "msg-1",
+            role: "user",
+            text: "Hello",
+            ts: "2024-01-01T00:00:00.000Z",
+            // No embedding
+          },
+        ],
+        entities: [],
+        tools: [],
+      };
+
+      const result = await restoreSessionToNeo4j(mockSession, sessionData);
+
+      expect(result.messageCount).toBe(1);
+      expect(mockGenerateEmbedding).toHaveBeenCalledTimes(1);
+      expect(mockGenerateEmbedding).toHaveBeenCalledWith("Hello");
+    });
+
+    it("should handle mixed embeddings (some stored, some not)", async () => {
+      const storedEmbedding = new Array(1024).fill(0.5);
+
+      const sessionData = {
+        id: "session-1",
+        messages: [
+          {
+            id: "msg-1",
+            role: "user",
+            text: "Message with embedding",
+            ts: "2024-01-01T00:00:00.000Z",
+            embedding: storedEmbedding,
+          },
+          {
+            id: "msg-2",
+            role: "assistant",
+            text: "Message without embedding",
+            ts: "2024-01-01T00:01:00.000Z",
+            // No embedding
+          },
+        ],
+        entities: [],
+        tools: [],
+      };
+
+      const result = await restoreSessionToNeo4j(mockSession, sessionData);
+
+      expect(result.messageCount).toBe(2);
+      expect(mockGenerateEmbedding).toHaveBeenCalledTimes(1);
+      expect(mockGenerateEmbedding).toHaveBeenCalledWith(
+        "Message without embedding",
+      );
+    });
+
+    it("should reject embeddings with wrong dimension", async () => {
+      const wrongDimensionEmbedding = new Array(512).fill(0.5);
+
+      const sessionData = {
+        id: "session-1",
+        messages: [
+          {
+            id: "msg-1",
+            role: "user",
+            text: "Message with wrong dimension",
+            ts: "2024-01-01T00:00:00.000Z",
+            embedding: wrongDimensionEmbedding,
+          },
+        ],
+        entities: [],
+        tools: [],
+      };
+
+      const result = await restoreSessionToNeo4j(mockSession, sessionData);
+
+      expect(result.messageCount).toBe(1);
+      expect(mockGenerateEmbedding).toHaveBeenCalledTimes(1);
     });
   });
 });
