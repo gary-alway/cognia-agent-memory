@@ -14,8 +14,8 @@
 
 ## Testing
 
-- [ ] **Manual Test Script**: Create comprehensive manual test script to prove all Cognia features work
-  - Test all MCP tools (store_memory, recall_memories, track_tool_usage, preferences, session_info)
+- [ ] **Manual Test Script**: Create comprehensive manual test script (within an agent e.g. Claude desktop)
+  - Test core MCP tools (store_memory, recall_memories, track_tool_usage, preferences, session_info)
   - Test memory ingestion and retrieval
   - Test entity extraction and fact storage
   - Test archival and restoration
