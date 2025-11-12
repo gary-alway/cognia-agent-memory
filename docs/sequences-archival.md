@@ -2,7 +2,7 @@
 
 This sequence diagram shows how old sessions are archived to MinIO for long-term storage.
 
-**Note:** Archived data is integrated into the memory retrieval system. When `recall_memories` is called with `include_archived=true`, archived sessions are searched alongside active data. See [long-term-memory.md](long-term-memory.md) for details.
+**Note:** Archived data is integrated into the memory retrieval system. By default, `recall_memories` searches archived sessions alongside active data. See [long-term-memory.md](long-term-memory.md) for details.
 
 ```mermaid
 sequenceDiagram

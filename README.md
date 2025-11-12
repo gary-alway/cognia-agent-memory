@@ -183,7 +183,7 @@ The MCP server is pre-configured in `.cursor/mcp.json`. **Important:** You must 
 **Available MCP Tools:**
 
 - `store_memory` - Store messages with entity and fact extraction
-- `recall_memories` - Semantic search (includes archived data with `include_archived=true`)
+- `recall_memories` - Semantic search (includes archived data by default, disable with `include_archived=false`)
 - `track_tool_usage` - Track tool calls for pattern learning
 - `set_preference` / `get_preferences` - User preference management
 - `get_session_info` - Get current session and user IDs
@@ -237,7 +237,7 @@ make help          # Show all available commands
 - **Semantic search** - Archived messages are retrieved using vector similarity search
 - **Tool trace logging** for audits - Tool traces can be archived separately
 
-**Note:** When using `recall_memories` with `include_archived=true`, the system searches both active Neo4j data and archived MinIO sessions.
+**Note:** `recall_memories` searches both active Neo4j data and archived MinIO sessions by default. Set `include_archived=false` to search only recent data for faster queries.
 
 ### RAG Integration
 

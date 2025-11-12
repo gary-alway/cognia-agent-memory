@@ -26,12 +26,12 @@ Cognia archives old sessions to MinIO (S3-compatible storage) for long-term rete
 - `list_archived_sessions` - List archived sessions from MinIO with metadata (session IDs, timestamps, message counts)
 - `replay_session` - Retrieve and replay an archived session, optionally restore it back to Neo4j for search
 
-✅ **Integration with Memory Retrieval**: Archived sessions can be searched when recalling memories (opt-in)
+✅ **Integration with Memory Retrieval**: Archived sessions are searched when recalling memories
 
-- The `recall_memories` tool can search both active data in Neo4j and archived sessions in MinIO via `include_archived=true`
+- The `recall_memories` tool searches both active data in Neo4j and archived sessions in MinIO
 - Archived messages use pre-stored embeddings for fast similarity search
 - Results from both sources are merged and reranked together
-- **Disabled by default** (`include_archived=false`) to reduce latency for most queries
+- **Enabled by default** (`include_archived=true`), can be disabled with `include_archived=false` for faster queries on recent data only
 
 ## Architecture
 
@@ -59,7 +59,7 @@ See [sequences-archival.md](sequences-archival.md) for the detailed sequence dia
 
 ## How Archived Memory Retrieval Works
 
-When `recall_memories` is called with `include_archived=true`:
+When `recall_memories` is called (with `include_archived=true` by default):
 
 1. **Query Processing**: The query is converted to an embedding vector
 2. **Active Memory Search**: Searches active messages in Neo4j using vector similarity
@@ -154,12 +154,12 @@ console.log(
 
 ### Using Archived Memory in Retrieval
 
-Archived memory is available via the `include_archived` parameter in the `recall_memories` MCP tool. This is disabled by default (`include_archived=false`) for faster queries. Enable it when you need to search long-term archived data.
+Archived memory is enabled by default via the `include_archived` parameter in the `recall_memories` MCP tool. Set `include_archived=false` to disable and search only recent data for faster queries.
 
 ```typescript
-// Via MCP tool (opt-in)
-// Pass include_archived=true to search archived memory
-// Default is false for performance reasons
+// Via MCP tool
+// Archived memory is enabled by default
+// Pass include_archived=false to search only recent data for faster queries
 
 // Programmatically
 import { retrieveWithExpansionAndRerank } from "./retrieval/advanced_retrieval";
