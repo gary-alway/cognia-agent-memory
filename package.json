@@ -1,6 +1,6 @@
 {
   "name": "cognia-agent-memory",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "Graph RAG-based agent memory system using Neo4j, vector embeddings",
   "scripts": {

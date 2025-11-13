@@ -404,6 +404,11 @@ export async function restoreSessionToNeo4j(
       const messageId = msg.id || randomUUID();
       const embedding = messageEmbeddings[i];
 
+      const timestampDate = new Date(msg.ts);
+      const timestampMillis = isNaN(timestampDate.getTime())
+        ? Date.now()
+        : timestampDate.getTime();
+
       tx.run(
         `
         MATCH (s:Session {id: $session_id})
@@ -412,7 +417,7 @@ export async function restoreSessionToNeo4j(
                      m.text = $text,
                      m.embedding = $embedding,
                      m.importance = $importance,
-                     m.ts = datetime($timestamp)
+                     m.ts = datetime({epochMillis: toInteger($timestamp)})
         MERGE (s)-[:HAS_MESSAGE]->(m)
         `,
         {
@@ -422,7 +427,7 @@ export async function restoreSessionToNeo4j(
           text: msg.text,
           embedding: embedding,
           importance: DEFAULT_IMPORTANCE.MESSAGE,
-          timestamp: msg.ts,
+          timestamp: Math.floor(timestampMillis),
         },
       );
 
